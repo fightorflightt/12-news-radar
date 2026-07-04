@@ -47,6 +47,7 @@ gh api \
   --method PUT \
   -H "Accept: application/vnd.github+json" \
   "/repos/$OWNER/$REPO/pages" \
+  -f build_type=legacy \
   -f 'source[branch]=main' \
   -f 'source[path]=/docs' >/dev/null 2>&1 || true
 
