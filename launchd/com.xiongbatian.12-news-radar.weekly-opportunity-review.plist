@@ -10,6 +10,7 @@
     <string>/usr/bin/python3</string>
     <string>/Users/xiongbatian/Documents/Codex/2026-07-04/ai-builder/work/12-news-radar/scripts/news_radar.py</string>
     <string>weekly-opportunity-review</string>
+    <string>--publish</string>
     <string>--notify</string>
   </array>
   <key>WorkingDirectory</key>

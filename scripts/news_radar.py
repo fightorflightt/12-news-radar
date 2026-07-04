@@ -742,6 +742,7 @@ def main() -> int:
         default="daily",
     )
     parser.add_argument("--date", help="Date in YYYY-MM-DD. Defaults to today in Asia/Shanghai.")
+    parser.add_argument("--publish", action="store_true", help="Publish generated HTML to GitHub Pages.")
     parser.add_argument("--notify", action="store_true", help="Send completion notification through Hermes.")
     args = parser.parse_args()
 
@@ -755,10 +756,21 @@ def main() -> int:
     markdown_path, html_path = write_outputs(report)
     print(f"Markdown: {markdown_path}")
     print(f"HTML: {html_path}")
+    published_url = ""
+    if args.publish:
+        publish_script = ROOT / "scripts" / "publish_github_pages.sh"
+        result = subprocess.run(["bash", str(publish_script)], cwd=ROOT, text=True, check=False)
+        if result.returncode != 0:
+            return result.returncode
+        github = settings.get("github", {})
+        published_url = f"https://{github.get('owner')}.github.io/{github.get('repo')}/"
     if args.notify:
+        body = f"Obsidian: {markdown_path}\nHTML: {html_path}"
+        if published_url:
+            body = f"{body}\nPages: {published_url}"
         notify(
             f"{report['date']} 资讯雷达已生成",
-            f"Obsidian: {markdown_path}\nHTML: {html_path}",
+            body,
         )
     return 0
 

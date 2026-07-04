@@ -46,14 +46,14 @@ bash scripts/publish_github_pages.sh
 
 | 任务 | 命令 |
 |---|---|
-| 每日资讯 | `python3 scripts/news_radar.py daily` |
+| 每日资讯 | `python3 scripts/news_radar.py daily --publish --notify` |
 | AI 搞钱 | `python3 scripts/news_radar.py ai-money` |
 | AI Builder | `python3 scripts/news_radar.py ai-builders` |
 | 政策/产业/岗位雷达 | `python3 scripts/news_radar.py policy-jobs` |
-| 每日成长复盘 | `python3 scripts/news_radar.py daily-review --notify` |
-| 每周行动清单 | `python3 scripts/news_radar.py weekly-plan --notify` |
-| GitHub 热门 | `python3 scripts/news_radar.py weekly-github --notify` |
-| 每周机会复盘 | `python3 scripts/news_radar.py weekly-opportunity-review --notify` |
+| 每日成长复盘 | `python3 scripts/news_radar.py daily-review --publish --notify` |
+| 每周行动清单 | `python3 scripts/news_radar.py weekly-plan --publish --notify` |
+| GitHub 热门 | `python3 scripts/news_radar.py weekly-github --publish --notify` |
+| 每周机会复盘 | `python3 scripts/news_radar.py weekly-opportunity-review --publish --notify` |
 
 ## Hermes 通知
 
