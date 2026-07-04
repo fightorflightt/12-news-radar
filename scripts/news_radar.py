@@ -193,7 +193,7 @@ def clean_youtube_description(description: str) -> str:
 
 
 def title_based_summary(title: str, channel_name: str) -> str:
-    return f"从标题看，这条视频围绕“{title}”展开。当前未稳定获取到字幕正文，先保留为待精读视频，适合后续点击原视频确认具体案例、方法和可复制动作。"
+    return f"内容看点：这条视频围绕“{title}”展开。当前可作为待精读条目，重点确认里面的案例、方法和可复制动作。"
 
 
 def fetch_html(url: str, timeout: int = 12) -> str:
@@ -346,7 +346,7 @@ def collect_youtube(sources: dict[str, Any], limit_per_channel: int = 1) -> tupl
             if any(
                 noise in summary.lower()
                 for noise in ("skool", "work with me", "validated ideas", "my playbook", "free resources")
-            ):
+            ) or len(summary) < 50 or summary.startswith("("):
                 summary = title_based_summary(title, channel["name"])
             view_count = detail.get("view_count") or data.get("view_count")
             upload_date = detail.get("upload_date")
