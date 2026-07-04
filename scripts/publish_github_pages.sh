@@ -38,14 +38,16 @@ else
 fi
 
 gh api \
-  --method PUT \
-  -H "Accept: application/vnd.github+json" \
-  "/repos/$OWNER/$REPO/pages" \
-  -f build_type=workflow >/dev/null 2>&1 || \
-gh api \
   --method POST \
   -H "Accept: application/vnd.github+json" \
   "/repos/$OWNER/$REPO/pages" \
-  -f build_type=workflow >/dev/null 2>&1 || true
+  -f 'source[branch]=main' \
+  -f 'source[path]=/docs' >/dev/null 2>&1 || \
+gh api \
+  --method PUT \
+  -H "Accept: application/vnd.github+json" \
+  "/repos/$OWNER/$REPO/pages" \
+  -f 'source[branch]=main' \
+  -f 'source[path]=/docs' >/dev/null 2>&1 || true
 
 echo "Published: https://$OWNER.github.io/$REPO/"
