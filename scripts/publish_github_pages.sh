@@ -41,7 +41,7 @@ gh api \
   --method POST \
   -H "Accept: application/vnd.github+json" \
   "/repos/$OWNER/$REPO/pages" \
-  -f source.branch=main \
-  -f source.path=/site >/dev/null 2>&1 || true
+  -f 'source[branch]=main' \
+  -f 'source[path]=/site' >/dev/null 2>&1 || true
 
 echo "Published: https://$OWNER.github.io/$REPO/"
