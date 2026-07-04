@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.xiongbatian.12-news-radar.daily</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>/Users/xiongbatian/Documents/Codex/2026-07-04/ai-builder/work/12-news-radar/scripts/news_radar.py</string>
+    <string>daily</string>
+    <string>--notify</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/xiongbatian/Documents/Codex/2026-07-04/ai-builder/work/12-news-radar</string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>10</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/tmp/12-news-radar.daily.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/12-news-radar.daily.err.log</string>
+</dict>
+</plist>

@@ -1,0 +1,120 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f5ef;
+  --panel: #ffffff;
+  --ink: #202124;
+  --muted: #6b6f76;
+  --line: #dedbd2;
+  --accent: #176b5c;
+  --accent-2: #9b3d2e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 28px 22px;
+  border-right: 1px solid var(--line);
+  background: #f0eee7;
+}
+.brand { font-size: 18px; font-weight: 700; }
+.date { margin-top: 8px; color: var(--muted); font-size: 14px; }
+nav { display: grid; gap: 10px; margin-top: 28px; }
+nav a {
+  color: var(--ink);
+  text-decoration: none;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(32, 33, 36, .1);
+}
+nav a:hover { color: var(--accent); }
+main {
+  max-width: 980px;
+  width: 100%;
+  padding: 42px 40px 80px;
+}
+.page-header {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 24px;
+  margin-bottom: 28px;
+}
+.page-header p {
+  margin: 0 0 8px;
+  color: var(--accent-2);
+  font-weight: 700;
+}
+h1 {
+  margin: 0;
+  font-size: 38px;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  color: var(--muted);
+}
+.summary span, .summary a {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, .5);
+  color: inherit;
+  text-decoration: none;
+}
+section { margin-top: 34px; }
+h2 {
+  font-size: 24px;
+  margin: 0 0 14px;
+  letter-spacing: 0;
+}
+.item {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+.item h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+.item p {
+  margin: 0;
+  color: #35383d;
+  line-height: 1.72;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.source-link { color: var(--accent); }
+.empty { color: var(--muted); }
+@media (max-width: 760px) {
+  body { display: block; }
+  .sidebar {
+    position: relative;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 14px;
+  }
+  main { padding: 28px 20px 56px; }
+  h1 { font-size: 30px; }
+}

@@ -1,0 +1,85 @@
+{
+  "youtube": [
+    {
+      "name": "Matt Wolfe",
+      "role": "AI变现路径的侦察兵",
+      "url": "https://www.youtube.com/@mreflow/videos"
+    },
+    {
+      "name": "Seena Rez",
+      "role": "AI+跨境电商掘金王",
+      "url": "https://www.youtube.com/@SeenaRez/videos"
+    },
+    {
+      "name": "Dan Koe",
+      "role": "一人公司的专属导师",
+      "url": "https://www.youtube.com/@DanKoeTalks/videos"
+    },
+    {
+      "name": "Nate Herk",
+      "role": "AI内容自动化大神",
+      "url": "https://www.youtube.com/@nateherk/videos"
+    },
+    {
+      "name": "Greg Isenberg",
+      "role": "AI小工具创业实战派",
+      "url": "https://www.youtube.com/@GregIsenberg/videos"
+    }
+  ],
+  "github": {
+    "topics": [
+      "ai",
+      "llm",
+      "agent",
+      "aigc",
+      "automation"
+    ],
+    "limit": 20
+  },
+  "ai_builders": {
+    "name": "follow-builders",
+    "url": "https://github.com/zarazhangrui/follow-builders"
+  },
+  "policy_job_sources": [
+    {
+      "name": "泉州市人民政府",
+      "url": "https://www.quanzhou.gov.cn/",
+      "keywords": ["人工智能", "产业", "政策", "招聘", "事业单位", "国企"]
+    },
+    {
+      "name": "厦门市人民政府",
+      "url": "https://www.xm.gov.cn/",
+      "keywords": ["人工智能", "产业", "政策", "招聘", "事业单位", "国企"]
+    },
+    {
+      "name": "福建省工业和信息化厅",
+      "url": "https://gxt.fujian.gov.cn/",
+      "keywords": ["人工智能", "软件", "数字经济", "产业政策"]
+    },
+    {
+      "name": "福建省人力资源和社会保障厅",
+      "url": "https://rst.fujian.gov.cn/",
+      "keywords": ["招聘", "事业单位", "公务员", "国企", "岗位"]
+    },
+    {
+      "name": "福建省发展和改革委员会",
+      "url": "https://fgw.fujian.gov.cn/",
+      "keywords": ["项目申报", "产业", "数字经济", "政策"]
+    },
+    {
+      "name": "福建省科学技术厅",
+      "url": "https://kjt.fujian.gov.cn/",
+      "keywords": ["科技计划", "项目申报", "人工智能", "创新"]
+    }
+  ],
+  "job_keywords": [
+    "AI 产品经理",
+    "跨境电商",
+    "AIGC",
+    "互联网",
+    "AI",
+    "事业单位",
+    "公务员",
+    "国企"
+  ]
+}
