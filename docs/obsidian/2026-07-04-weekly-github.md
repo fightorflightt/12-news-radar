@@ -17,11 +17,11 @@ tags:
 
 - **openclaw/openclaw**
   - 摘要：Your own personal AI assistant. Any OS. Any Platform. The lobster way. 🦞 
-  - 信息：Stars: 381643；更新: 2026-07-04
+  - 信息：Stars: 381644；更新: 2026-07-04
   - 来源：https://github.com/openclaw/openclaw
 - **obra/superpowers**
   - 摘要：An agentic skills framework & software development methodology that works.
-  - 信息：Stars: 245786；更新: 2026-07-04
+  - 信息：Stars: 245787；更新: 2026-07-04
   - 来源：https://github.com/obra/superpowers
 - **NousResearch/hermes-agent**
   - 摘要：The agent that grows with you
@@ -33,7 +33,7 @@ tags:
   - 来源：https://github.com/n8n-io/n8n
 - **Significant-Gravitas/AutoGPT**
   - 摘要：AutoGPT is the vision of accessible AI for everyone, to use and to build on. Our mission is to provide the tools, so that you can focus on what matters.
-  - 信息：Stars: 185333；更新: 2026-07-04
+  - 信息：Stars: 185334；更新: 2026-07-04
   - 来源：https://github.com/Significant-Gravitas/AutoGPT
 - **f/prompts.chat**
   - 摘要：f.k.a. Awesome ChatGPT Prompts. Share, discover, and collect prompts from the community. Free and open source — self-host for your organization with complete privacy.
@@ -45,7 +45,7 @@ tags:
   - 来源：https://github.com/AUTOMATIC1111/stable-diffusion-webui
 - **Snailclimb/JavaGuide**
   - 摘要：Java 面试 & 后端通用面试指南，覆盖计算机基础、数据库、分布式、高并发、系统设计与 AI 应用开发
-  - 信息：Stars: 156782；更新: 2026-07-04
+  - 信息：Stars: 156783；更新: 2026-07-04
   - 来源：https://github.com/Snailclimb/JavaGuide
 - **langgenius/dify**
   - 摘要：Production-ready platform for agentic workflow development.
@@ -53,7 +53,7 @@ tags:
   - 来源：https://github.com/langgenius/dify
 - **open-webui/open-webui**
   - 摘要：User-friendly AI Interface (Supports Ollama, OpenAI API, ...)
-  - 信息：Stars: 144146；更新: 2026-07-04
+  - 信息：Stars: 144145；更新: 2026-07-04
   - 来源：https://github.com/open-webui/open-webui
 - **firecrawl/firecrawl**
   - 摘要：The API to search, scrape, and interact with the web at scale. 🔥
@@ -85,7 +85,7 @@ tags:
   - 来源：https://github.com/google-gemini/gemini-cli
 - **supabase/supabase**
   - 摘要：The Postgres development platform. Supabase gives you a dedicated Postgres database to build your web, mobile, and AI applications.
-  - 信息：Stars: 105622；更新: 2026-07-04
+  - 信息：Stars: 105623；更新: 2026-07-04
   - 来源：https://github.com/supabase/supabase
 - **rasbt/LLMs-from-scratch**
   - 摘要：Implement a ChatGPT-like LLM in PyTorch from scratch, step by step
@@ -93,5 +93,5 @@ tags:
   - 来源：https://github.com/rasbt/LLMs-from-scratch
 - **harry0703/MoneyPrinterTurbo**
   - 摘要：利用AI大模型，一键生成高清短视频 Generate short videos with one click using AI LLM.
-  - 信息：Stars: 95579；更新: 2026-07-04
+  - 信息：Stars: 95580；更新: 2026-07-04
   - 来源：https://github.com/harry0703/MoneyPrinterTurbo

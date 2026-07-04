@@ -13,7 +13,7 @@
 输出位置：
 
 - Obsidian：`/Users/xiongbatian/Desktop/全栈学习笔记/12-资讯`
-- HTML：`site/`
+- HTML：`docs/`
 - GitHub Pages：`https://fightorflightt.github.io/12-news-radar/`
 
 ## 使用方式

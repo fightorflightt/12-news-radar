@@ -2,12 +2,12 @@
   "project_name": "12-news-radar",
   "timezone": "Asia/Shanghai",
   "obsidian_dir": "/Users/xiongbatian/Desktop/全栈学习笔记/12-资讯",
-  "site_dir": "site",
+  "site_dir": "docs",
   "github": {
     "owner": "fightorflightt",
     "repo": "12-news-radar",
     "pages_branch": "main",
-    "pages_path": "/site"
+    "pages_path": "/docs"
   },
   "notification": {
     "provider": "hermes",
