@@ -191,7 +191,7 @@ def collect_ai_builders(sources: dict[str, Any]) -> list[Item]:
     ]
 
 
-def fetch_links_from_source(source: dict[str, Any], max_links: int = 8) -> tuple[list[Item], str | None]:
+def fetch_links_from_source(source: dict[str, Any], max_links: int = 5) -> tuple[list[Item], str | None]:
     url = source["url"]
     keywords = source.get("keywords", [])
     try:
@@ -207,8 +207,22 @@ def fetch_links_from_source(source: dict[str, Any], max_links: int = 8) -> tuple
     parser.feed(text)
     found: list[Item] = []
     seen: set[str] = set()
+    generic_titles = {
+        "政策",
+        "部门政策解读",
+        "惠企政策查询",
+        "政策文件库",
+        "计算机软件资格考试",
+        "事业单位招聘",
+        "事业单位人事统计报表",
+    }
     for title, href in parser.links:
         if not title or not href:
+            continue
+        href_lower = href.strip().lower()
+        if href_lower.startswith(("javascript:", "#")):
+            continue
+        if title in generic_titles:
             continue
         if keywords and not any(keyword in title for keyword in keywords):
             continue
@@ -372,33 +386,50 @@ def build_weekly_opportunity_review(date: datetime) -> list[Item]:
 
 
 def item_to_markdown(item: Item) -> str:
-    parts = [f"- **{item.title}**"]
+    parts = [f"**{item.title}**"]
     if item.summary:
-        parts.append(f"  - 摘要：{item.summary}")
+        parts.extend(["", item.summary])
     if item.meta:
-        parts.append(f"  - 信息：{item.meta}")
+        parts.extend(["", f"补充：{item.meta}"])
     if item.url:
-        parts.append(f"  - 来源：{item.url}")
+        parts.extend(["", item.url])
     return "\n".join(parts)
 
 
+def date_cn(date: str) -> str:
+    parsed = datetime.strptime(date, "%Y-%m-%d")
+    return parsed.strftime("%Y年%m月%d日")
+
+
+def report_title(report: dict[str, Any]) -> str:
+    title_by_task = {
+        "daily": "12 资讯雷达日报",
+        "ai-money": "AI 变现派日报",
+        "ai-builders": "AI Builders 日报",
+        "policy-jobs": "政策、产业与岗位机会雷达",
+        "daily-review": "每日成长复盘",
+        "weekly-plan": "每周行动清单",
+        "weekly-github": "GitHub 热门周报",
+        "weekly-opportunity-review": "每周机会复盘",
+    }
+    return f"{title_by_task.get(report['task'], '12 资讯雷达')} · {date_cn(report['date'])}"
+
+
+def display_section(section: str) -> str:
+    section_names = {
+        "AI 搞钱": "💰 AI 搞钱",
+        "GitHub 热门 Top20": "⭐ GitHub 热门 Top20",
+        "AI Builder": "🧑‍💻 AI Builder",
+        "政策、产业与岗位机会雷达": "🏢 政策、产业与岗位机会雷达",
+        "每日成长复盘": "🌙 每日成长复盘",
+        "每周行动清单": "📌 每周行动清单",
+        "每周机会复盘": "🔎 每周机会复盘",
+    }
+    return section_names.get(section, section)
+
+
 def render_markdown(report: dict[str, Any]) -> str:
-    date = report["date"]
-    task = report["task"]
-    lines = [
-        "---",
-        f"title: {date} 资讯雷达",
-        f"date: {date}",
-        f"task: {task}",
-        "tags:",
-        "  - 资讯雷达",
-        "  - 自动化",
-        "---",
-        "",
-        f"# {date} 资讯雷达",
-        "",
-        "## 今日摘要",
-    ]
+    lines = [f"# {report_title(report)}", "", "## 今日摘要"]
     section_count = sum(len(items) for items in report["sections"].values())
     lines.append(f"- 本次生成 {len(report['sections'])} 个板块，共 {section_count} 条信息。")
     if report["errors"]:
@@ -407,11 +438,13 @@ def render_markdown(report: dict[str, Any]) -> str:
         lines.append("- 所有已配置来源均完成处理。")
 
     for section, items in report["sections"].items():
-        lines.extend(["", f"## {section}", ""])
+        lines.extend(["", f"## {display_section(section)}", ""])
         if not items:
             lines.append("- 今日暂无内容。")
             continue
-        for item in items:
+        for index, item in enumerate(items):
+            if index:
+                lines.extend(["", "---", ""])
             lines.append(item_to_markdown(item))
 
     if report["errors"]:
@@ -430,7 +463,7 @@ def render_html(report: dict[str, Any], markdown_name: str) -> str:
     date = report["date"]
     sections = report["sections"]
     nav = "\n".join(
-        f'<a href="#{slugify_anchor(section)}">{html.escape(section)}</a>'
+        f'<a href="#{slugify_anchor(section)}">{html.escape(display_section(section))}</a>'
         for section in sections
     )
     body_sections: list[str] = []
@@ -452,7 +485,7 @@ def render_html(report: dict[str, Any], markdown_name: str) -> str:
         if not cards:
             cards.append("<p class=\"empty\">今日暂无内容。</p>")
         body_sections.append(
-            f'<section id="{slugify_anchor(section)}"><h2>{html.escape(section)}</h2>{"".join(cards)}</section>'
+            f'<section id="{slugify_anchor(section)}"><h2>{html.escape(display_section(section))}</h2>{"".join(cards)}</section>'
         )
 
     errors = ""
@@ -465,7 +498,7 @@ def render_html(report: dict[str, Any], markdown_name: str) -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{html.escape(date)} 资讯雷达</title>
+  <title>{html.escape(report_title(report))}</title>
   <link rel="stylesheet" href="./assets/style.css">
 </head>
 <body>
@@ -477,7 +510,7 @@ def render_html(report: dict[str, Any], markdown_name: str) -> str:
   <main>
     <header class="page-header">
       <p>资讯摘要</p>
-      <h1>{html.escape(date)} 资讯雷达</h1>
+      <h1>{html.escape(report_title(report))}</h1>
       <div class="summary">
         <span>{len(sections)} 个板块</span>
         <span>{sum(len(items) for items in sections.values())} 条信息</span>
