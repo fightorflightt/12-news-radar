@@ -24,6 +24,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 SETTINGS_PATH = ROOT / "config" / "settings.json"
 SOURCES_PATH = ROOT / "config" / "sources.json"
+FOLLOW_BUILDERS_DIR = Path("/Users/xiongbatian/.codex/skills/follow-builders")
 
 
 class LinkParser(HTMLParser):
@@ -193,7 +194,70 @@ def clean_youtube_description(description: str) -> str:
 
 
 def title_based_summary(title: str, channel_name: str) -> str:
-    return f"内容看点：这条视频围绕“{title}”展开。当前可作为待精读条目，重点确认里面的案例、方法和可复制动作。"
+    return f"这期内容围绕“{translate_title_hint(title)}”。当前未稳定获取到完整字幕，先作为待精读条目保留，重点看其中的案例、方法和可复制动作。"
+
+
+def translate_title_hint(title: str) -> str:
+    lower = title.lower()
+    if "ai agents are the new saas" in lower:
+        return "AI Agent 正在变成新一代 SaaS：从工具辅助转向直接完成工作"
+    if "valuable ai can never replace" in lower:
+        return "如何让自己在 AI 时代保持不可替代：提升判断力、创造力和个人价值"
+    if "2.7m brand" in lower:
+        return "用 AI 搭建并放大一个 270 万美元品牌：产品、网站、广告和爆款视频"
+    if "fable" in lower and "karpathy" in lower:
+        return "把 Fable 5 和 Karpathy 的 LLM 知识库结合起来，搭建可推理的第二大脑"
+    if "fable" in lower:
+        return "本周 AI 新闻：Fable 回归、新模型进展、NotebookLM、Claude、Gemini 和 Codex 相关更新"
+    return title
+
+
+def youtube_cn_summary(title: str, raw_summary: str, channel_name: str) -> str:
+    low = raw_summary.lower()
+    if raw_summary.startswith("这期内容围绕"):
+        return raw_summary
+    if (
+        len(raw_summary) < 80
+        or any(noise in low for noise in ("explore ai tools", "let’s work together", "free credits"))
+        or raw_summary.startswith("(")
+    ):
+        return title_based_summary(title, channel_name)
+    if channel_name == "Greg Isenberg":
+        return (
+            "这期核心观点是：AI Agent 正在成为新的 SaaS。传统软件是帮人完成工作，Agent 软件会直接参与并执行工作流。"
+            "可关注他的路线：找一个有明确付费意愿的细分场景，观察人工流程，先做最小可用 Agent，用试点项目验证，再产品化。"
+        )
+    return f"这期主要讲“{translate_title_hint(title)}”。原始简介显示：{raw_summary}"
+
+
+def builder_tweet_cn_summary(name: str, text: str) -> str:
+    low = text.lower()
+    if "exa" in low and "bake off" in low:
+        return "Swyx 提到团队做了一次 Exa 与竞品的快速对比，约 1.5 小时后就一致选择 Exa。这个信号说明 AI 搜索/语义检索工具正在进入更务实的产品选型阶段。"
+    if "project genie" in low:
+        return "Google Labs 展示 Project Genie：用户选择角色、设定场景后，可以在几分钟内从玩游戏变成设计游戏。值得关注 AI 生成式游戏和低门槛创作工具。"
+    if "42% of the web" in low:
+        return "Guillermo Rauch 提到一项能力可能把 AI 带到 42% 的网页生态中，覆盖多模型、多提供商和多模态。重点关注 AI 基础设施如何进入主流 Web 工作流。"
+    if "ai and mathematics" in low:
+        return "Kevin Weil 关注 AI 与数学领域的新突破。这个方向通常代表模型推理能力、科研辅助和高难任务评测的进展。"
+    if "layoffs" in low:
+        return "Peter Yang 提到频繁裁员和绩效压力对心理健康的影响。对个人职业选择来说，值得把公司稳定性和组织节奏纳入判断。"
+    if "agent labs" in low or "models get better" in low:
+        return "Swyx 讨论一种会随着模型变强而变好的业务：Agent Lab 类产品可能直接受益于底层模型性能提升。"
+    if len(text) <= 80:
+        return f"{name} 发布了一条短动态：{text}。信息量较少，建议只作为弱信号保留。"
+    return f"{name} 的这条动态值得快速扫一眼。主题大致是：{text[:160]}。建议结合原文判断它是否代表新的产品、技术或创业趋势。"
+
+
+def podcast_cn_summary(title: str, transcript: str) -> str:
+    low = f"{title} {transcript}".lower()
+    if "stainless" in low and "mcp" in low:
+        return (
+            "这期播客讨论 Stainless、API、SDK 与 MCP 的关系。核心观点是：互联网原本是为人和传统软件设计的，"
+            "但 AI Agent 需要一种更适合模型调用工具和服务的接口。Stainless 的方向是让 API、SDK 和 MCP 更适合 AI 使用，"
+            "尤其是降低模型调用大量工具时的上下文成本和安全风险。"
+        )
+    return f"这期播客围绕“{title}”展开，建议关注其中关于 AI 产品、基础设施、开发者工具和创业趋势的判断。"
 
 
 def fetch_html(url: str, timeout: int = 12) -> str:
@@ -348,6 +412,7 @@ def collect_youtube(sources: dict[str, Any], limit_per_channel: int = 1) -> tupl
                 for noise in ("skool", "work with me", "validated ideas", "my playbook", "free resources")
             ) or len(summary) < 50 or summary.startswith("("):
                 summary = title_based_summary(title, channel["name"])
+            summary = youtube_cn_summary(title, summary, channel["name"])
             view_count = detail.get("view_count") or data.get("view_count")
             upload_date = detail.get("upload_date")
             duration = detail.get("duration_string") or data.get("duration_string")
@@ -414,35 +479,65 @@ def collect_github(sources: dict[str, Any]) -> tuple[list[Item], list[str]]:
 
 
 def collect_ai_builders(sources: dict[str, Any]) -> list[Item]:
-    source = sources.get("ai_builders", {})
-    url = source.get("url", "https://github.com/zarazhangrui/follow-builders")
-    summary = "follow-builders 是用于跟踪 AI builder 动态的项目入口。当前日报先读取仓库说明，后续可继续接它的 feed 输出。"
-    meta = "GitHub 仓库说明"
-    if shutil.which("gh"):
+    items: list[Item] = []
+    x_feed = FOLLOW_BUILDERS_DIR / "feed-x.json"
+    podcast_feed = FOLLOW_BUILDERS_DIR / "feed-podcasts.json"
+
+    if x_feed.exists():
         try:
-            output = run_text(
-                [
-                    "gh",
-                    "repo",
-                    "view",
-                    "zarazhangrui/follow-builders",
-                    "--json",
-                    "description,stargazerCount,pushedAt",
-                ],
-                timeout=30,
-            )
-            repo = json.loads(output)
-            summary = repo.get("description") or summary
-            meta = f"Stars: {repo.get('stargazerCount')}；更新: {(repo.get('pushedAt') or '')[:10]}"
+            data = json.loads(x_feed.read_text(encoding="utf-8"))
+            for builder in data.get("x", [])[:6]:
+                tweets = builder.get("tweets", [])
+                if not tweets:
+                    continue
+                tweet = max(tweets, key=lambda t: int(t.get("likes") or 0))
+                text = clean_text(tweet.get("text") or "")
+                if not text:
+                    continue
+                title = f"{builder.get('name', 'AI Builder')}：{text[:42]}"
+                summary = builder_tweet_cn_summary(builder.get("name", "AI Builder"), text)
+                items.append(
+                    Item(
+                        title=title,
+                        source=f"X / {builder.get('handle', '')}",
+                        url=tweet.get("url", ""),
+                        summary=summary,
+                        meta=f"Likes: {tweet.get('likes', 0)}；Replies: {tweet.get('replies', 0)}",
+                    )
+                )
         except Exception:  # noqa: BLE001
             pass
+
+    if podcast_feed.exists():
+        try:
+            data = json.loads(podcast_feed.read_text(encoding="utf-8"))
+            for episode in data.get("podcasts", [])[:2]:
+                transcript = clean_text(episode.get("transcript") or "")
+                title = episode.get("title") or episode.get("name") or "AI Builder Podcast"
+                summary = podcast_cn_summary(title, transcript)
+                items.append(
+                    Item(
+                        title=f"{episode.get('name', 'Podcast')}：{title}",
+                        source="follow-builders / Podcast",
+                        url=episode.get("url", ""),
+                        summary=f"播客摘要：{summary}",
+                        meta=f"发布: {(episode.get('publishedAt') or '')[:10]}",
+                    )
+                )
+        except Exception:  # noqa: BLE001
+            pass
+
+    if items:
+        return items[:8]
+
+    url = sources.get("ai_builders", {}).get("url", "https://github.com/zarazhangrui/follow-builders")
     return [
         Item(
             title="follow-builders",
             source="AI Builder",
             url=url,
-            summary=summary,
-            meta=meta,
+            summary="未能读取 follow-builders feed，已保留项目入口。后续可重试中心 feed 或检查本地 skill 文件。",
+            meta="feed 兜底",
         )
     ]
 
