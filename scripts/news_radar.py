@@ -9,6 +9,7 @@ import re
 import shutil
 import ssl
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime
 from html.parser import HTMLParser
@@ -53,6 +54,34 @@ class LinkParser(HTMLParser):
         self._text_parts = []
 
 
+class TextParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.parts: list[str] = []
+        self._skip_depth = 0
+        self._capture = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if tag in {"script", "style", "noscript", "svg"}:
+            self._skip_depth += 1
+            return
+        self._capture = tag in {"title", "h1", "h2", "h3", "p", "li", "td", "div"}
+
+    def handle_data(self, data: str) -> None:
+        if self._skip_depth:
+            return
+        text = " ".join(data.split())
+        if self._capture and text:
+            self.parts.append(text)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag in {"script", "style", "noscript", "svg"} and self._skip_depth:
+            self._skip_depth -= 1
+        self._capture = False
+
+
 @dataclass(frozen=True)
 class Item:
     title: str
@@ -83,6 +112,181 @@ def run_text(command: list[str], timeout: int = 30) -> str:
     if result.returncode != 0:
         raise RuntimeError((result.stderr or result.stdout).strip())
     return result.stdout
+
+
+def clean_text(text: str) -> str:
+    text = re.sub(r"https?://\S+", "", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip(" \n\t-—|")
+
+
+def split_sentences(text: str) -> list[str]:
+    text = clean_text(text)
+    if not text:
+        return []
+    parts = re.split(r"(?<=[。！？!?])\s+|(?<=[。！？!?])|(?<=[.!?])\s+", text)
+    return [part.strip() for part in parts if len(part.strip()) >= 12]
+
+
+def summarize_text(text: str, fallback: str, max_sentences: int = 3, max_chars: int = 280) -> str:
+    sentences = split_sentences(text)
+    if not sentences:
+        return fallback
+    selected: list[str] = []
+    for sentence in sentences:
+        if sentence in selected:
+            continue
+        low = sentence.lower()
+        if any(noise in low for noise in ("subscribe", "sponsor", "discord", "newsletter")):
+            continue
+        selected.append(sentence)
+        if len(selected) >= max_sentences:
+            break
+    if not selected:
+        selected = sentences[:max_sentences]
+    summary = " ".join(selected)
+    if len(summary) > max_chars:
+        summary = summary[: max_chars - 1].rstrip() + "…"
+    return summary
+
+
+def clean_youtube_description(description: str) -> str:
+    noise_patterns = (
+        "http",
+        "skool",
+        "work with me",
+        "try @",
+        "#",
+        " ig:",
+        "instagram",
+        "twitter",
+        "linkedin",
+        "spotify",
+        "newsletter",
+        "bootcamp",
+        "sponsor",
+        "free resource",
+        "free month",
+        "code ",
+        "discount",
+        "my books",
+        "socials",
+        "chapters",
+        "0:00",
+        "subscribe",
+    )
+    kept: list[str] = []
+    for raw in description.splitlines():
+        line = clean_text(raw)
+        if len(line) < 20:
+            continue
+        low = f" {line.lower()}"
+        if "resources from today" in low:
+            marker = re.search(r"resources from today'?s video:?", line, flags=re.I)
+            if marker:
+                line = line[marker.end() :].strip(" :-")
+                low = f" {line.lower()}"
+        if any(pattern in low for pattern in noise_patterns):
+            continue
+        kept.append(line)
+    return " ".join(kept)
+
+
+def title_based_summary(title: str, channel_name: str) -> str:
+    return f"从标题看，这条视频围绕“{title}”展开。当前未稳定获取到字幕正文，先保留为待精读视频，适合后续点击原视频确认具体案例、方法和可复制动作。"
+
+
+def fetch_html(url: str, timeout: int = 12) -> str:
+    request = Request(url, headers={"User-Agent": "12-news-radar/1.0"})
+    context = ssl._create_unverified_context()
+    with urlopen(request, timeout=timeout, context=context) as response:
+        raw = response.read()
+    return raw.decode("utf-8", errors="replace")
+
+
+def fetch_links(url: str, timeout: int = 12) -> list[tuple[str, str]]:
+    parser = LinkParser()
+    parser.feed(fetch_html(url, timeout=timeout))
+    return parser.links
+
+
+def fetch_html_text(url: str, timeout: int = 12) -> str:
+    parser = TextParser()
+    parser.feed(fetch_html(url, timeout=timeout))
+    chunks: list[str] = []
+    seen: set[str] = set()
+    for part in parser.parts:
+        clean = clean_text(part)
+        if len(clean) < 8 or clean in seen:
+            continue
+        seen.add(clean)
+        chunks.append(clean)
+    return " ".join(chunks[:80])
+
+
+def youtube_video_details(url: str) -> dict[str, Any]:
+    output = run_text(
+        ["yt-dlp", "--no-check-certificates", "--skip-download", "--dump-json", url],
+        timeout=60,
+    )
+    return json.loads(output.splitlines()[-1])
+
+
+def clean_vtt(path: Path, max_words: int = 180) -> str:
+    words: list[str] = []
+    seen_lines: set[str] = set()
+    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith(("WEBVTT", "Kind:", "Language:")):
+            continue
+        if "-->" in line or re.match(r"^\d+$", line):
+            continue
+        line = re.sub(r"<[^>]+>", "", line)
+        line = re.sub(r"\[[^\]]+\]", "", line)
+        line = clean_text(line)
+        if len(line) < 3 or line in seen_lines:
+            continue
+        seen_lines.add(line)
+        words.extend(line.split())
+        if len(words) >= max_words:
+            break
+    return " ".join(words[:max_words])
+
+
+def youtube_transcript_excerpt(url: str) -> str:
+    with tempfile.TemporaryDirectory(prefix="12-news-radar-") as tmp:
+        output_template = str(Path(tmp) / "%(id)s.%(ext)s")
+        result = subprocess.run(
+            [
+                "yt-dlp",
+                "--no-check-certificates",
+                "--write-sub",
+                "--write-auto-sub",
+                "--sub-langs",
+                "zh-Hans,zh,en",
+                "--sub-format",
+                "vtt",
+                "--skip-download",
+                "-o",
+                output_template,
+                url,
+            ],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=90,
+            check=False,
+        )
+        if result.returncode != 0:
+            return ""
+        for path in sorted(Path(tmp).glob("*.vtt")):
+            excerpt = clean_vtt(path)
+            if len(excerpt) > 120:
+                return excerpt
+    return ""
 
 
 def collect_youtube(sources: dict[str, Any], limit_per_channel: int = 1) -> tuple[list[Item], list[str]]:
@@ -118,16 +322,48 @@ def collect_youtube(sources: dict[str, Any], limit_per_channel: int = 1) -> tupl
             url = data.get("url") or data.get("webpage_url") or ""
             if url and not url.startswith("http"):
                 url = f"https://www.youtube.com/watch?v={url}"
-            view_count = data.get("view_count")
+            detail: dict[str, Any] = {}
+            if url:
+                try:
+                    detail = youtube_video_details(url)
+                    title = detail.get("title") or title
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"{channel['name']} 视频详情：{exc}")
+            transcript = ""
+            if url and os.environ.get("USE_YOUTUBE_SUBTITLES") == "1":
+                try:
+                    transcript = youtube_transcript_excerpt(url)
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"{channel['name']} 字幕：{exc}")
+            description = detail.get("description") or data.get("description") or ""
+            source_text = transcript or clean_youtube_description(description) or description
+            summary = summarize_text(
+                source_text,
+                fallback=title_based_summary(title, channel["name"]),
+                max_sentences=3,
+                max_chars=360,
+            )
+            if any(
+                noise in summary.lower()
+                for noise in ("skool", "work with me", "validated ideas", "my playbook", "free resources")
+            ):
+                summary = title_based_summary(title, channel["name"])
+            view_count = detail.get("view_count") or data.get("view_count")
+            upload_date = detail.get("upload_date")
+            duration = detail.get("duration_string") or data.get("duration_string")
             meta = f"{channel.get('role', '')}"
             if view_count:
                 meta = f"{meta}；播放量约 {view_count}"
+            if duration:
+                meta = f"{meta}；时长 {duration}"
+            if upload_date and len(upload_date) == 8:
+                meta = f"{meta}；发布 {upload_date[:4]}-{upload_date[4:6]}-{upload_date[6:]}"
             items.append(
                 Item(
                     title=title,
                     source=channel["name"],
                     url=url,
-                    summary=f"最新视频：{title}。适合用于快速观察 {channel['name']} 最近关注的 AI 变现、内容或创业方向。",
+                    summary=summary,
                     meta=meta.strip("；"),
                 )
             )
@@ -180,13 +416,33 @@ def collect_github(sources: dict[str, Any]) -> tuple[list[Item], list[str]]:
 def collect_ai_builders(sources: dict[str, Any]) -> list[Item]:
     source = sources.get("ai_builders", {})
     url = source.get("url", "https://github.com/zarazhangrui/follow-builders")
+    summary = "follow-builders 是用于跟踪 AI builder 动态的项目入口。当前日报先读取仓库说明，后续可继续接它的 feed 输出。"
+    meta = "GitHub 仓库说明"
+    if shutil.which("gh"):
+        try:
+            output = run_text(
+                [
+                    "gh",
+                    "repo",
+                    "view",
+                    "zarazhangrui/follow-builders",
+                    "--json",
+                    "description,stargazerCount,pushedAt",
+                ],
+                timeout=30,
+            )
+            repo = json.loads(output)
+            summary = repo.get("description") or summary
+            meta = f"Stars: {repo.get('stargazerCount')}；更新: {(repo.get('pushedAt') or '')[:10]}"
+        except Exception:  # noqa: BLE001
+            pass
     return [
         Item(
             title="follow-builders",
             source="AI Builder",
             url=url,
-            summary="第一版先保留 follow-builders 入口。后续可接入它的 feed 或运行它的脚本，把 Builder 动态合并进日报。",
-            meta="待接入 feed",
+            summary=summary,
+            meta=meta,
         )
     ]
 
@@ -195,16 +451,10 @@ def fetch_links_from_source(source: dict[str, Any], max_links: int = 5) -> tuple
     url = source["url"]
     keywords = source.get("keywords", [])
     try:
-        request = Request(url, headers={"User-Agent": "12-news-radar/1.0"})
-        context = ssl._create_unverified_context()
-        with urlopen(request, timeout=12, context=context) as response:
-            raw = response.read()
-        text = raw.decode("utf-8", errors="replace")
+        links = fetch_links(url)
     except (OSError, URLError) as exc:
         return [], f"{source['name']}：{exc}"
 
-    parser = LinkParser()
-    parser.feed(text)
     found: list[Item] = []
     seen: set[str] = set()
     generic_titles = {
@@ -215,8 +465,14 @@ def fetch_links_from_source(source: dict[str, Any], max_links: int = 5) -> tuple
         "计算机软件资格考试",
         "事业单位招聘",
         "事业单位人事统计报表",
+        "政策图解",
+        "政策文件",
+        "政策解读",
+        "政策问答",
+        "创新服务",
+        "公务员招考",
     }
-    for title, href in parser.links:
+    for title, href in links:
         if not title or not href:
             continue
         href_lower = href.strip().lower()
@@ -231,12 +487,22 @@ def fetch_links_from_source(source: dict[str, Any], max_links: int = 5) -> tuple
         if key in seen:
             continue
         seen.add(key)
+        try:
+            article_text = fetch_html_text(absolute)
+            summary = summarize_text(
+                article_text,
+                fallback=f"{source['name']} 发布了“{title}”相关信息，需点击原文核对细节。",
+                max_sentences=3,
+                max_chars=300,
+            )
+        except Exception:  # noqa: BLE001
+            summary = f"{source['name']} 发布了“{title}”相关信息，需点击原文核对细节。"
         found.append(
             Item(
                 title=title,
                 source=source["name"],
                 url=absolute,
-                summary=f"在 {source['name']} 发现与关注关键词相关的入口，建议人工核对原文。",
+                summary=summary,
                 meta="政策/产业/岗位线索",
             )
         )
